@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 
-type Modal = 'none' | 'login' | 'register';
+type Modal = 'none' | 'login';
 
 @Component({
   selector: 'app-landing-page',
@@ -32,11 +32,6 @@ type Modal = 'none' | 'login' | 'register';
           class="px-4 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300
                  hover:text-gray-900 dark:hover:text-white transition-colors">
           შესვლა
-        </button>
-        <button (click)="openModal('register')"
-          class="px-4 py-1.5 rounded-lg bg-accent text-white text-sm font-medium
-                 hover:bg-accent-hover transition-colors shadow-sm">
-          რეგისტრაცია
         </button>
       </div>
     </nav>
@@ -81,7 +76,7 @@ type Modal = 'none' | 'login' | 'register';
 
         <!-- CTA buttons -->
         <div class="flex flex-col sm:flex-row items-center gap-3 mt-2">
-          <button (click)="openModal('register')"
+          <button (click)="openModal('login')"
             class="px-8 py-3.5 rounded-xl bg-accent text-white font-semibold
                    hover:bg-accent-hover transition-all duration-200
                    shadow-lg shadow-accent/30 active:scale-95">
@@ -168,7 +163,7 @@ type Modal = 'none' | 'login' | 'register';
       <p class="text-gray-500 dark:text-gray-400 mb-8 max-w-md mx-auto">
         რეგისტრირდი და პირველი კითხვა უფასოდ დასვი
       </p>
-      <button (click)="openModal('register')"
+      <button (click)="openModal('login')"
         class="px-10 py-4 rounded-xl bg-accent text-white font-bold text-lg
                hover:bg-accent-hover transition-all shadow-xl shadow-accent/20 active:scale-95">
         დარეგისტრირდი
@@ -195,12 +190,8 @@ type Modal = 'none' | 'login' | 'register';
           <!-- Modal header -->
           <div class="px-6 pt-6 pb-4 flex items-center justify-between">
             <div>
-              <h2 class="text-xl font-bold text-gray-900 dark:text-white">
-                {{ modal() === 'login' ? 'შესვლა' : 'რეგისტრაცია' }}
-              </h2>
-              <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                {{ modal() === 'login' ? 'კეთილი იყოს თქვენი დაბრუნება' : 'გახდი LexAI-ის წევრი' }}
-              </p>
+              <h2 class="text-xl font-bold text-gray-900 dark:text-white">შესვლა</h2>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">კეთილი იყოს თქვენი დაბრუნება</p>
             </div>
             <button (click)="closeModal()"
               class="w-8 h-8 rounded-lg flex items-center justify-center
@@ -216,62 +207,6 @@ type Modal = 'none' | 'login' | 'register';
 
           <!-- Modal body -->
           <div class="px-6 pb-6">
-            @if (modal() === 'register') {
-              <form (ngSubmit)="doRegister()" class="space-y-3">
-                <div class="grid grid-cols-2 gap-3">
-                  <div>
-                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">სახელი</label>
-                    <input [(ngModel)]="reg.first_name" name="first_name" required
-                      class="form-input" placeholder="გიორგი">
-                  </div>
-                  <div>
-                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">გვარი</label>
-                    <input [(ngModel)]="reg.last_name" name="last_name" required
-                      class="form-input" placeholder="მამარდაშვილი">
-                  </div>
-                </div>
-                <div>
-                  <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">ელ. ფოსტა</label>
-                  <input [(ngModel)]="reg.email" name="email" type="email" required
-                    class="form-input" placeholder="name@example.com">
-                </div>
-                <div>
-                  <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">ტელეფონი</label>
-                  <input [(ngModel)]="reg.phone" name="phone"
-                    class="form-input" placeholder="+995 5XX XXX XXX">
-                </div>
-                <div>
-                  <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">პაროლი</label>
-                  <input [(ngModel)]="reg.password" name="password" type="password" required
-                    class="form-input" placeholder="მინ. 8 სიმბოლო">
-                </div>
-                <div>
-                  <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">გაიმეორე პაროლი</label>
-                  <input [(ngModel)]="reg.password_confirmation" name="password_confirmation"
-                    type="password" required class="form-input" placeholder="••••••••">
-                </div>
-
-                @if (formError()) {
-                  <p class="text-xs text-red-500 bg-red-50 dark:bg-red-950/30 rounded-lg px-3 py-2">
-                    {{ formError() }}
-                  </p>
-                }
-
-                <button type="submit" [disabled]="loading()"
-                  class="w-full py-3 rounded-xl bg-accent text-white font-semibold
-                         hover:bg-accent-hover disabled:opacity-60 transition-all
-                         shadow-sm shadow-accent/20 mt-1">
-                  {{ loading() ? 'იტვირთება...' : 'დარეგისტრირდი' }}
-                </button>
-
-                <p class="text-center text-xs text-gray-400">
-                  უკვე გაქვს ანგარიში?
-                  <button type="button" (click)="openModal('login')"
-                    class="text-accent hover:underline font-medium">შესვლა</button>
-                </p>
-              </form>
-            }
-
             @if (modal() === 'login') {
               <form (ngSubmit)="doLogin()" class="space-y-3">
                 <div>
@@ -298,11 +233,6 @@ type Modal = 'none' | 'login' | 'register';
                   {{ loading() ? 'იტვირთება...' : 'შესვლა' }}
                 </button>
 
-                <p class="text-center text-xs text-gray-400">
-                  ანგარიში არ გაქვს?
-                  <button type="button" (click)="openModal('register')"
-                    class="text-accent hover:underline font-medium">რეგისტრაცია</button>
-                </p>
               </form>
             }
           </div>
