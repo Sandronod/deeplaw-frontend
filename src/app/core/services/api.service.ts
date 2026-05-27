@@ -2,15 +2,17 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { environment } from '../../../environments/environment';
 import { Chat } from '../models/chat.model';
-import { ChatMessage, SseEvent, SseStatusData, SseTokenData, SseDoneData, SseErrorData } from '../models/message.model';
+import { ChatMessage, SseEvent } from '../models/message.model';
 import { AuthService } from './auth.service';
+import { ConfigService } from './config.service';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
-  private base = environment.apiUrl;
-  private auth = inject(AuthService);
+  private config = inject(ConfigService);
+  private auth   = inject(AuthService);
+
+  private get base(): string { return this.config.apiUrl; }
 
   constructor(private http: HttpClient) {}
 
