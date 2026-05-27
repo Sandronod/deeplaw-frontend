@@ -24,7 +24,7 @@ type Modal = 'none' | 'login';
           </svg>
         </div>
         <span class="font-bold text-gray-900 dark:text-white text-sm tracking-tight">
-          LexAI
+          DeepLaw
         </span>
       </div>
       <div class="flex items-center gap-2">
@@ -119,7 +119,7 @@ type Modal = 'none' | 'login';
       <div class="max-w-5xl mx-auto">
         <div class="text-center mb-16">
           <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            რატომ LexAI?
+            რატომ DeepLaw?
           </h2>
           <p class="text-gray-500 dark:text-gray-400 max-w-xl mx-auto">
             ხელოვნური ინტელექტი, რომელიც ქართული სასამართლო პრაქტიკას იცნობს
@@ -173,7 +173,7 @@ type Modal = 'none' | 'login';
     <!-- ═══════════════════════ FOOTER ═══════════════════════ -->
     <footer class="py-8 border-t border-gray-100 dark:border-gray-800 text-center
                    text-xs text-gray-400 dark:text-gray-600">
-      © {{ year }} LexAI — ქართული სამართლის AI ასისტენტი
+      © {{ year }} DeepLaw — ქართული სამართლის AI ასისტენტი
     </footer>
 
     <!-- ═══════════════════════ MODALS ═══════════════════════ -->
