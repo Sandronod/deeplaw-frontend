@@ -4,7 +4,7 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve --port 4200",
-    "build": "ng build",
+    "build": "ng build --configuration production",
     "watch": "ng build --watch --configuration development",
     "tailwind:watch": "npx tailwindcss -i ./src/tailwind.css -o ./src/tailwind-out.css --watch",
     "tailwind:build": "npx tailwindcss -i ./src/tailwind.css -o ./src/tailwind-out.css"
