@@ -1,9 +1,9 @@
-import { Injectable, signal, computed, inject } from '@angular/core';
+import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { tap } from 'rxjs/operators';
 import { Observable } from 'rxjs';
-import { ConfigService } from './config.service';
+import { environment } from '../../../environments/environment';
 
 export interface AuthUser {
   id: number;
@@ -18,8 +18,7 @@ const USER_KEY  = 'auth_user';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private config = inject(ConfigService);
-  private get base(): string { return this.config.apiUrl; }
+  private base = environment.apiUrl;
 
   readonly user  = signal<AuthUser | null>(this.loadUser());
   readonly token = signal<string | null>(localStorage.getItem(TOKEN_KEY));

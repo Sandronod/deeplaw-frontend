@@ -5,14 +5,13 @@ import { map } from 'rxjs/operators';
 import { Chat } from '../models/chat.model';
 import { ChatMessage, SseEvent } from '../models/message.model';
 import { AuthService } from './auth.service';
-import { ConfigService } from './config.service';
+import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
-  private config = inject(ConfigService);
-  private auth   = inject(AuthService);
+  private auth = inject(AuthService);
 
-  private get base(): string { return this.config.apiUrl; }
+  private readonly base = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 
@@ -123,7 +122,8 @@ export class ApiService {
                     observer.next({ event: eventName as SseEvent['event'], data });
 
                     // Complete the observable after terminal events
-                    if (eventName === 'done' || eventName === 'error') {
+                    // 'eval' arrives after 'done' — keep the stream open until 'error'
+                    if (eventName === 'error') {
                       observer.complete();
                       return;
                     }

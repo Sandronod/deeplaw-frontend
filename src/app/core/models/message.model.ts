@@ -98,6 +98,30 @@ export interface EchrCitation {
   url: string;
 }
 
+// ── LLM-as-Judge evaluation ───────────────────────────────────────────────────
+
+export type EvalVerdict = 'excellent' | 'good' | 'acceptable' | 'poor' | 'eval_failed';
+
+export interface EvalScores {
+  legal_accuracy:    number;
+  citation_validity: number;
+  structure:         number;
+  completeness:      number;
+  no_hallucination:  number;
+}
+
+export interface EvalResult {
+  scores:       EvalScores | null;
+  overall:      number | null;
+  verdict:      EvalVerdict;
+  issues:       string[];
+  strengths:    string[];
+  summary:      string | null;
+  error?:       string;
+  evaluated_at: string;
+  model:        string;
+}
+
 // ── Meta ──────────────────────────────────────────────────────────────────────
 
 export interface MessageMeta {
@@ -136,6 +160,7 @@ export interface ChatMessage {
   eu_citations?: EuCitation[];
   german_citations?: GermanCitation[];
   const_court_citations?: ConstCourtCitation[];
+  eval?: EvalResult | null;
   meta?: MessageMeta;
   created_at: string;
   // UI-only fields — not persisted
@@ -147,9 +172,14 @@ export interface ChatMessage {
 
 // ── SSE events ────────────────────────────────────────────────────────────────
 
+export interface SseEvalData {
+  message_id: number;
+  eval: EvalResult;
+}
+
 export interface SseEvent {
-  event: 'status' | 'token' | 'done' | 'error';
-  data: SseStatusData | SseTokenData | SseDoneData | SseErrorData;
+  event: 'status' | 'token' | 'done' | 'eval' | 'error';
+  data: SseStatusData | SseTokenData | SseDoneData | SseEvalData | SseErrorData;
 }
 
 export interface SseStatusData {
@@ -169,6 +199,7 @@ export interface SseDoneData {
   eu_citations?: EuCitation[];
   german_citations?: GermanCitation[];
   const_court_citations?: ConstCourtCitation[];
+  eval?: EvalResult | null;
   meta: MessageMeta;
 }
 

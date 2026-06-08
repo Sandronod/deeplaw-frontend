@@ -6,7 +6,7 @@ import { Chat } from '../models/chat.model';
 import {
   ChatMessage,
   SseDoneData,
-  SseErrorData,
+  SseEvalData,
   SseStatusData,
   SseTokenData,
   StreamPhase,
@@ -177,6 +177,7 @@ export class ChatService {
                     eu_citations:     d.eu_citations      ?? [],
                     german_citations:     d.german_citations      ?? [],
                     const_court_citations: d.const_court_citations ?? [],
+                    eval:          d.eval ?? null,
                     meta:          d.meta,
                     status:    'done' as const,
                   }
@@ -186,6 +187,16 @@ export class ChatService {
             this.streamPhase.set(null);
             // Refresh sidebar titles after first message
             this.api.getChats().subscribe(chats => this.chats.set(chats));
+            break;
+          }
+
+          case 'eval': {
+            const evalData = sseEvent.data as SseEvalData;
+            this.messages.update(msgs => msgs.map(m =>
+              m.id === evalData.message_id
+                ? { ...m, eval: evalData.eval }
+                : m
+            ));
             break;
           }
 

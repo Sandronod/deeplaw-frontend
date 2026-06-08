@@ -1,6 +1,6 @@
 import { Component, Input, signal, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { ChatMessage } from "../../../../core/models/message.model";
+import { ChatMessage, EvalResult } from "../../../../core/models/message.model";
 import { MarkdownService } from "../../../../core/services/markdown.service";
 import { CaseModalService } from "../../../../core/services/case-modal.service";
 import { CitationListComponent } from "../citation-list/citation-list.component";
@@ -23,7 +23,30 @@ import { MessageActionsComponent } from "../message-actions/message-actions.comp
                 class="max-w-3xl mx-auto px-4 py-2"
                 [class.msg-enter]="message.isNew"
             >
-                <div class="flex justify-end">
+                <div class="flex justify-end items-end gap-1.5 group">
+                    <!-- Copy button — visible on hover -->
+                    <button
+                        (click)="copyUser()"
+                        title="კოპირება"
+                        class="opacity-0 group-hover:opacity-100 transition-opacity duration-150
+                               flex items-center gap-1 px-1.5 py-1 rounded-md text-[11px]
+                               text-gray-400 hover:text-gray-600 dark:hover:text-gray-300
+                               hover:bg-gray-100 dark:hover:bg-gray-800 shrink-0 mb-0.5"
+                    >
+                        @if (userCopied()) {
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                        } @else {
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                            </svg>
+                        }
+                    </button>
+
                     <div class="max-w-[75%] sm:max-w-[65%]">
                         <div
                             class="chat-text bg-gray-100 dark:bg-[#2d2d2d] text-gray-800 dark:text-gray-100
@@ -162,6 +185,90 @@ import { MessageActionsComponent } from "../message-actions/message-actions.comp
                                 />
                             </div>
                         }
+
+                        <!-- ── LLM-as-Judge evaluation ─────────────────────────────────── -->
+                        @if (isDone && !eval && message.isNew) {
+                            <div class="mt-2 flex items-center gap-1.5 text-[11px] text-gray-300 dark:text-gray-600 animate-pulse">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                                </svg>
+                                <span>AI შეფასება მიმდინარეობს…</span>
+                            </div>
+                        }
+                        @if (isDone && eval?.verdict === 'eval_failed') {
+                            <div class="mt-2 flex items-center gap-1.5 text-[11px] text-gray-300 dark:text-gray-600">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                                </svg>
+                                <span>შეფასება ვერ მოხერხდა</span>
+                            </div>
+                        }
+                        @if (isDone && eval && eval.verdict !== 'eval_failed') {
+                            <div class="mt-3 border-t border-gray-100 dark:border-gray-800 pt-2">
+
+                                <!-- Collapsed header (always visible) -->
+                                <button
+                                    class="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500
+                                           hover:text-gray-600 dark:hover:text-gray-300 transition-colors w-full text-left"
+                                    (click)="toggleEval()"
+                                >
+                                    <span class="font-medium" [class]="evalColor">
+                                        {{ evalEmoji }} {{ evalLabel }}
+                                    </span>
+                                    <span class="text-gray-300 dark:text-gray-600">·</span>
+                                    <span>AI შეფასება: {{ eval.overall?.toFixed(1) }}/10</span>
+                                    <svg class="ml-auto w-3 h-3 transition-transform"
+                                         [class.rotate-180]="evalVisible()"
+                                         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                        <polyline points="6 9 12 15 18 9"/>
+                                    </svg>
+                                </button>
+
+                                <!-- Expanded detail -->
+                                @if (evalVisible()) {
+                                    <div class="mt-2 space-y-2 animate-fade-in">
+
+                                        <!-- Score bars -->
+                                        @if (eval.scores) {
+                                            <div class="grid grid-cols-1 gap-1 text-xs">
+                                                @for (item of evalScoreItems; track item.key) {
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="w-40 text-gray-400 dark:text-gray-500 shrink-0">{{ item.label }}</span>
+                                                        <div class="flex-1 bg-gray-100 dark:bg-gray-800 rounded-full h-1.5">
+                                                            <div class="h-1.5 rounded-full transition-all"
+                                                                 [style.width.%]="(item.value / 10) * 100"
+                                                                 [class]="item.value >= 8 ? 'bg-green-400' : item.value >= 6 ? 'bg-yellow-400' : 'bg-red-400'">
+                                                            </div>
+                                                        </div>
+                                                        <span class="w-8 text-right text-gray-500 dark:text-gray-400 shrink-0">{{ item.value }}/10</span>
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+
+                                        <!-- Summary -->
+                                        @if (eval.summary) {
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 italic leading-relaxed border-l-2 border-gray-200 dark:border-gray-700 pl-2">
+                                                {{ eval.summary }}
+                                            </p>
+                                        }
+
+                                        <!-- Issues -->
+                                        @if (eval.issues?.length) {
+                                            <div class="text-xs text-orange-500 dark:text-orange-400 space-y-0.5">
+                                                @for (issue of eval.issues; track issue) {
+                                                    <div class="flex gap-1"><span>⚠</span><span>{{ issue }}</span></div>
+                                                }
+                                            </div>
+                                        }
+
+                                        <div class="text-[10px] text-gray-300 dark:text-gray-700">
+                                            შეაფასა: {{ eval.model }}
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
                     </div>
                 </div>
             </div>
@@ -174,6 +281,8 @@ export class MessageItemComponent {
     @Input() streamPhase: string | null = null;
 
     citationsVisible = signal(false);
+    evalVisible      = signal(false);
+    userCopied       = signal(false);
 
     // Markdown memoization — avoids re-parsing on every CD tick during streaming
     private _cachedContent = "";
@@ -236,8 +345,65 @@ export class MessageItemComponent {
         );
     }
 
+    copyUser(): void {
+        navigator.clipboard.writeText(this.message.content).then(() => {
+            this.userCopied.set(true);
+            setTimeout(() => this.userCopied.set(false), 2000);
+        });
+    }
+
     toggleCitations(): void {
         this.citationsVisible.update((v) => !v);
+    }
+
+    toggleEval(): void {
+        this.evalVisible.update((v) => !v);
+    }
+
+    get eval(): EvalResult | null {
+        return this.message.eval ?? null;
+    }
+
+    get evalLabel(): string {
+        switch (this.eval?.verdict) {
+            case 'excellent':  return 'შესანიშნავი';
+            case 'good':       return 'კარგი';
+            case 'acceptable': return 'მისაღები';
+            case 'poor':       return 'სუსტი';
+            default:           return '';
+        }
+    }
+
+    get evalEmoji(): string {
+        switch (this.eval?.verdict) {
+            case 'excellent':  return '✅';
+            case 'good':       return '✅';
+            case 'acceptable': return '⚠️';
+            case 'poor':       return '❌';
+            default:           return '📊';
+        }
+    }
+
+    get evalColor(): string {
+        switch (this.eval?.verdict) {
+            case 'excellent':
+            case 'good':       return 'text-green-500 dark:text-green-400';
+            case 'acceptable': return 'text-yellow-500 dark:text-yellow-400';
+            case 'poor':       return 'text-red-500 dark:text-red-400';
+            default:           return 'text-gray-400';
+        }
+    }
+
+    get evalScoreItems(): { key: string; label: string; value: number }[] {
+        const s = this.eval?.scores;
+        if (!s) return [];
+        return [
+            { key: 'legal_accuracy',    label: 'სამართლებრივი სიზუსტე', value: s.legal_accuracy },
+            { key: 'citation_validity', label: 'Citation სისწორე',       value: s.citation_validity },
+            { key: 'no_hallucination',  label: 'ჰალუცინაცია (10=კი)',    value: s.no_hallucination },
+            { key: 'completeness',      label: 'სისრულე',                 value: s.completeness },
+            { key: 'structure',         label: 'სტრუქტურა',              value: s.structure },
+        ];
     }
 
     handleContentClick(event: MouseEvent): void {
