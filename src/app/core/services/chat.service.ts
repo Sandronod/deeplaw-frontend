@@ -24,7 +24,7 @@ export class ChatService {
   readonly error        = signal<string | null>(null);
   /** Increments on every token — lets chat-thread re-evaluate scroll position. */
   readonly streamTick   = signal(0);
-  readonly sources      = signal<string[]>(['court', 'matsne', 'eu', 'german', 'const_court']);
+  readonly sources      = signal<string[]>(['court', 'matsne', 'echr', 'eu', 'german', 'const_court']);
 
   readonly chatsLoading = signal(false);
   readonly hasChats     = computed(() => this.chats().length > 0);
@@ -168,9 +168,10 @@ export class ChatService {
             this.messages.update(msgs => msgs.map(m =>
               m.id === tempId
                 ? {
-                    ...m,
-                    id:            d.message_id,
-                    citations:        d.citations,
+                  ...m,
+                  id:            d.message_id,
+                  content:       d.content ?? m.content,
+                  citations:        d.citations,
                     law_citations:    d.law_citations     ?? [],
                     echr_citations:   d.echr_citations    ?? [],
                     matsne_citations: d.matsne_citations  ?? [],

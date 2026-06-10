@@ -16,6 +16,12 @@ export interface Citation {
   dispute_subject: string | null;
   result: string | null;
   relevance_score: number | null;
+  semantic_relevance_score?: number | null;
+  semantic_relevance_confidence?: string | null;
+  ranking_explanation?: string | null;
+  answer_role?: 'primary' | 'supporting' | string | null;
+  answer_role_label?: string | null;
+  answer_rank?: number | null;
   case_type: string | null;
   url: string | null;
 }
@@ -36,6 +42,7 @@ export interface MatsneCitation {
   type: 'matsne';
   matsne_id: number;
   title: string;
+  article_num?: number | null;
   doc_type: string | null;
   issuer: string | null;
   is_active: boolean;
@@ -192,6 +199,7 @@ export interface SseTokenData {
 
 export interface SseDoneData {
   message_id: number;
+  content?: string;
   citations: Citation[];
   law_citations?: LawCitation[];
   echr_citations?: EchrCitation[];

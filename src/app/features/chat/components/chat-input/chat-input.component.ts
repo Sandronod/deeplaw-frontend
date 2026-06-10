@@ -129,11 +129,12 @@ export class ChatInputComponent {
   text    = '';
   focused = false;
 
-  readonly allSources = ['court', 'matsne', 'eu', 'german', 'const_court'];
+  readonly allSources = ['court', 'matsne', 'echr', 'eu', 'german', 'const_court'];
 
   readonly sourceOptions: { value: string; label: string }[] = [
     { value: 'court',       label: '⚖️ საქმეები' },
     { value: 'matsne',      label: '📋 მაცნე' },
+    { value: 'echr',        label: 'ECHR' },
     { value: 'eu',          label: '🇪🇺 EU' },
     { value: 'german',      label: '🇩🇪 გერმანია' },
     { value: 'const_court', label: '🏛️ საკონსტ.' },

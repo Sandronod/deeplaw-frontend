@@ -400,7 +400,7 @@ export class MessageItemComponent {
         return [
             { key: 'legal_accuracy',    label: 'სამართლებრივი სიზუსტე', value: s.legal_accuracy },
             { key: 'citation_validity', label: 'Citation სისწორე',       value: s.citation_validity },
-            { key: 'no_hallucination',  label: 'ჰალუცინაცია (10=კი)',    value: s.no_hallucination },
+            { key: 'no_hallucination',  label: 'ჰალუცინაციის არქონა',    value: s.no_hallucination },
             { key: 'completeness',      label: 'სისრულე',                 value: s.completeness },
             { key: 'structure',         label: 'სტრუქტურა',              value: s.structure },
         ];

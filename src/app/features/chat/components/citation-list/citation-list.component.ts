@@ -34,7 +34,20 @@ import { CaseModalService } from '../../../../core/services/case-modal.service';
                          hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   <div class="flex items-center gap-2 min-w-0">
-                    <div class="w-1.5 h-1.5 rounded-full bg-accent shrink-0"></div>
+                    <div
+                      class="w-1.5 h-1.5 rounded-full shrink-0"
+                      [ngClass]="c.answer_role === 'supporting' ? 'bg-gray-400' : 'bg-accent'"
+                    ></div>
+                    @if (c.answer_role_label) {
+                      <span
+                        class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                        [ngClass]="c.answer_role === 'supporting'
+                          ? 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300'
+                          : 'bg-accent/10 text-accent'"
+                      >
+                        {{ c.answer_role_label }}
+                      </span>
+                    }
                     <span class="text-xs font-medium text-gray-700 dark:text-gray-200 truncate">
                       {{ c.case_num || ('Case #' + c.case_id) }}
                     </span>
@@ -77,7 +90,19 @@ import { CaseModalService } from '../../../../core/services/case-modal.service';
                           <p class="text-accent font-semibold">{{ (c.relevance_score * 100).toFixed(1) }}%</p>
                         </div>
                       }
+                      @if (c.semantic_relevance_score) {
+                        <div>
+                          <span class="text-gray-400">შინაარსობრივი ქულა</span>
+                          <p class="text-accent font-semibold">{{ c.semantic_relevance_score.toFixed(1) }}/100</p>
+                        </div>
+                      }
                     </div>
+                    @if (c.ranking_explanation) {
+                      <div class="text-xs">
+                        <span class="text-gray-400 dark:text-gray-500">რატომ შეირჩა</span>
+                        <p class="text-gray-700 dark:text-gray-200 mt-0.5">{{ c.ranking_explanation }}</p>
+                      </div>
+                    }
                     @if (c.dispute_subject) {
                       <div class="text-xs">
                         <span class="text-gray-400 dark:text-gray-500">სადაო საგანი</span>
@@ -123,7 +148,7 @@ import { CaseModalService } from '../../../../core/services/case-modal.service';
           </div>
 
           <div class="flex flex-col gap-1.5">
-            @for (m of matsneCitations; track m.matsne_id) {
+            @for (m of matsneCitations; track $index) {
               <div class="border border-emerald-100 dark:border-emerald-900/40 rounded-xl overflow-hidden
                           hover:border-emerald-200 dark:hover:border-emerald-800 transition-colors">
 
@@ -141,6 +166,11 @@ import { CaseModalService } from '../../../../core/services/case-modal.service';
                     <span class="text-xs font-medium text-gray-700 dark:text-gray-200 truncate">
                       {{ m.title }}
                     </span>
+                    @if (m.article_num) {
+                      <span class="text-xs text-emerald-600 dark:text-emerald-400 shrink-0">
+                        მუხლი {{ m.article_num }}
+                      </span>
+                    }
                     @if (m.doc_type) {
                       <span class="hidden sm:block text-xs text-gray-400 shrink-0 truncate">· {{ m.doc_type }}</span>
                     }
