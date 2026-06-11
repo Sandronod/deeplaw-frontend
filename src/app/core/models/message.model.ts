@@ -151,6 +151,13 @@ export interface MessageMeta {
   law_citation_count?: number;
 
   pipeline_ms?: number | null;
+  answer_correction?: {
+    enabled: boolean;
+    attempted: boolean;
+    corrected: boolean;
+    status: string;
+    [key: string]: unknown;
+  } | null;
 }
 
 // ── Chat message ──────────────────────────────────────────────────────────────
