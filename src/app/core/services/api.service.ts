@@ -69,7 +69,7 @@ export class ApiService {
    * Emits SseEvent objects: status → token* → done | error.
    * The Observable completes after 'done' or 'error'.
    */
-  streamMessage(chatId: number, message: string, sources: string[] = ['court', 'matsne', 'echr', 'eu', 'german', 'const_court']): Observable<SseEvent> {
+  streamMessage(chatId: number, message: string, sources: string[] = ['court', 'matsne']): Observable<SseEvent> {
     return new Observable<SseEvent>(observer => {
       const controller = new AbortController();
 

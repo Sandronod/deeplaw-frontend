@@ -98,6 +98,12 @@ import { MessageActionsComponent } from "../message-actions/message-actions.comp
                                 >
                                     {{ phaseLabel }}
                                 </span>
+                                @if (liveElapsedLabel) {
+                                    <span class="text-xs text-gray-300 dark:text-gray-600">·</span>
+                                    <span class="text-xs tabular-nums text-gray-400 dark:text-gray-500">
+                                        {{ liveElapsedLabel }}
+                                    </span>
+                                }
                             </div>
                         }
 
@@ -111,6 +117,11 @@ import { MessageActionsComponent } from "../message-actions/message-actions.comp
 
                             @if (isStreaming) {
                                 <span class="streaming-cursor"></span>
+                                @if (liveElapsedLabel) {
+                                    <div class="mt-1 text-[11px] tabular-nums text-gray-400 dark:text-gray-500">
+                                        {{ phaseLabel }} · {{ liveElapsedLabel }}
+                                    </div>
+                                }
                             }
                         }
 
@@ -153,12 +164,17 @@ import { MessageActionsComponent } from "../message-actions/message-actions.comp
                             <div
                                 class="flex items-center justify-between mt-2.5 gap-2 flex-wrap"
                             >
-                                <div>
+                                <div class="flex items-center gap-2 flex-wrap">
                                     @if (confidence) {
                                         <app-confidence-badge
                                             [level]="confidence"
                                             [explanation]="confidenceNote"
                                         />
+                                    }
+                                    @if (responseTimeLabel) {
+                                        <span class="text-[11px] tabular-nums text-gray-400 dark:text-gray-500">
+                                            {{ responseTimeLabel }}
+                                        </span>
                                     }
                                 </div>
 
@@ -254,7 +270,7 @@ import { MessageActionsComponent } from "../message-actions/message-actions.comp
                                         }
 
                                         <!-- Issues -->
-                                        @if (eval.issues?.length) {
+                                        @if (eval.issues.length) {
                                             <div class="text-xs text-orange-500 dark:text-orange-400 space-y-0.5">
                                                 @for (issue of eval.issues; track issue) {
                                                     <div class="flex gap-1"><span>⚠</span><span>{{ issue }}</span></div>
@@ -279,6 +295,7 @@ export class MessageItemComponent {
     @Input({ required: true }) message!: ChatMessage;
     /** Passed from chat-thread only for the currently-loading message. */
     @Input() streamPhase: string | null = null;
+    @Input() elapsedSeconds: number | null = null;
 
     citationsVisible = signal(false);
     evalVisible      = signal(false);
@@ -326,6 +343,23 @@ export class MessageItemComponent {
             case 'reranking':      return 'ვაანალიზებ შედეგებს…';
             default:               return 'ვეძებ…';
         }
+    }
+
+    get liveElapsedLabel(): string | null {
+        if (this.elapsedSeconds === null) {
+            return null;
+        }
+
+        return this.formatDuration(this.elapsedSeconds * 1000);
+    }
+
+    get responseTimeLabel(): string | null {
+        const ms = this.message.meta?.pipeline_ms;
+        if (typeof ms !== "number" || ms < 0) {
+            return null;
+        }
+
+        return `დრო: ${this.formatDuration(ms)}`;
     }
 
     get confidence() {
@@ -422,5 +456,18 @@ export class MessageItemComponent {
             this._cachedRendered = this.md.parse(this.message.content);
         }
         return this._cachedRendered;
+    }
+
+    private formatDuration(ms: number): string {
+        const seconds = Math.max(0, Math.round(ms / 1000));
+
+        if (seconds < 60) {
+            return `${seconds} წმ`;
+        }
+
+        const minutes = Math.floor(seconds / 60);
+        const restSeconds = seconds % 60;
+
+        return `${minutes} წთ ${restSeconds.toString().padStart(2, "0")} წმ`;
     }
 }

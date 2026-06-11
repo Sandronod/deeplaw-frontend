@@ -21,14 +21,18 @@ export class ChatService {
   readonly isLoading    = signal(false);
   readonly isSending    = signal(false);
   readonly streamPhase  = signal<StreamPhase | null>(null);
+  readonly streamElapsedSeconds = signal(0);
   readonly error        = signal<string | null>(null);
   /** Increments on every token — lets chat-thread re-evaluate scroll position. */
   readonly streamTick   = signal(0);
-  readonly sources      = signal<string[]>(['court', 'matsne', 'echr', 'eu', 'german', 'const_court']);
+  readonly sources      = signal<string[]>(['court', 'matsne']);
 
   readonly chatsLoading = signal(false);
   readonly hasChats     = computed(() => this.chats().length > 0);
   readonly activeChatId = computed(() => this.activeChat()?.id ?? null);
+
+  private streamStartedAt = 0;
+  private streamTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(private api: ApiService, private router: Router) {}
 
@@ -139,6 +143,7 @@ export class ChatService {
 
     this.isSending.set(true);
     this.streamPhase.set('searching');
+    this.startStreamTimer();
     this.error.set(null);
 
     // 3. Subscribe to SSE stream
@@ -186,6 +191,7 @@ export class ChatService {
             ));
             this.isSending.set(false);
             this.streamPhase.set(null);
+            this.stopStreamTimer(d.meta?.pipeline_ms ?? null);
             // Refresh sidebar titles after first message
             this.api.getChats().subscribe(chats => this.chats.set(chats));
             break;
@@ -210,6 +216,7 @@ export class ChatService {
             ));
             this.isSending.set(false);
             this.streamPhase.set(null);
+            this.stopStreamTimer();
             break;
           }
         }
@@ -224,10 +231,34 @@ export class ChatService {
         ));
         this.isSending.set(false);
         this.streamPhase.set(null);
+        this.stopStreamTimer();
         if (!hasPartial) {
           this.error.set('კავშირი გაწყდა. სცადეთ თავიდან.');
         }
       },
     });
+  }
+
+  private startStreamTimer(): void {
+    this.stopStreamTimer();
+    this.streamStartedAt = Date.now();
+    this.streamElapsedSeconds.set(0);
+
+    this.streamTimer = setInterval(() => {
+      this.streamElapsedSeconds.set(
+        Math.max(0, Math.floor((Date.now() - this.streamStartedAt) / 1000))
+      );
+    }, 250);
+  }
+
+  private stopStreamTimer(finalMs: number | null = null): void {
+    if (this.streamTimer !== null) {
+      clearInterval(this.streamTimer);
+      this.streamTimer = null;
+    }
+
+    if (finalMs !== null) {
+      this.streamElapsedSeconds.set(Math.max(0, Math.round(finalMs / 1000)));
+    }
   }
 }

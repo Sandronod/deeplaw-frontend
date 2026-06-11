@@ -88,7 +88,8 @@ import { MessageItemComponent } from '../message-item/message-item.component';
             @for (msg of chatService.messages(); track msg.id; let isLast = $last) {
               <app-message-item
                 [message]="msg"
-                [streamPhase]="isLast && msg.status === 'loading' ? chatService.streamPhase() : null"
+                [streamPhase]="isLast && (msg.status === 'loading' || msg.status === 'streaming') ? chatService.streamPhase() : null"
+                [elapsedSeconds]="isLast && (msg.status === 'loading' || msg.status === 'streaming') ? chatService.streamElapsedSeconds() : null"
               />
             }
           </div>
