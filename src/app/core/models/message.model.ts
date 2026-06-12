@@ -2,7 +2,20 @@ export type MessageRole      = 'user' | 'assistant' | 'system';
 export type ConfidenceLevel  = 'high' | 'medium' | 'low' | 'none';
 export type AnswerMode       = 'find' | 'summarize' | 'compare' | 'explain' | 'advise' | 'chat';
 export type MessageStatus    = 'loading' | 'streaming' | 'done' | 'error';
-export type StreamPhase      = 'searching' | 'law_lookup' | 'case_retrieval' | 'reranking' | 'writing';
+export type StreamPhase      =
+  | 'preparing'
+  | 'triage'
+  | 'query_normalizing'
+  | 'case_retrieval'
+  | 'law_lookup'
+  | 'echr_lookup'
+  | 'comparative_lookup'
+  | 'reranking'
+  | 'authority_check'
+  | 'context_building'
+  | 'writing'
+  | 'validating'
+  | 'finalizing';
 
 // ── Citation types ────────────────────────────────────────────────────────────
 

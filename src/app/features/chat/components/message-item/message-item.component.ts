@@ -337,11 +337,20 @@ export class MessageItemComponent {
 
     get phaseLabel(): string {
         switch (this.streamPhase) {
-            case 'writing':        return 'ვამზადებ პასუხს…';
-            case 'law_lookup':     return 'ვეძებ კანონმდებლობაში…';
-            case 'case_retrieval': return 'ვეძებ გადაწყვეტილებებს…';
-            case 'reranking':      return 'ვაანალიზებ შედეგებს…';
-            default:               return 'ვეძებ…';
+            case 'preparing':          return 'ვაანალიზებ კითხვას…';
+            case 'triage':             return 'ვარჩევ სამართლებრივ საკითხებს…';
+            case 'query_normalizing':  return 'ვაზუსტებ საძიებო სიტყვებს…';
+            case 'case_retrieval':     return 'ვეძებ სასამართლო გადაწყვეტილებებს…';
+            case 'law_lookup':         return 'ვამოწმებ კანონმდებლობას…';
+            case 'echr_lookup':        return 'ვამოწმებ ECHR პრაქტიკას…';
+            case 'comparative_lookup': return 'ვამოწმებ შედარებით წყაროებს…';
+            case 'reranking':          return 'ვარჩევ შესაბამის წყაროებს…';
+            case 'authority_check':    return 'ვამოწმებ წყაროების ავტორიტეტს…';
+            case 'context_building':   return 'ვამზადებ სამართლებრივ კონტექსტს…';
+            case 'writing':            return 'ვამზადებ პასუხს…';
+            case 'validating':         return 'ვამოწმებ პასუხის სიზუსტეს…';
+            case 'finalizing':         return 'ვასრულებ პასუხს…';
+            default:                   return 'ვაანალიზებ კითხვას…';
         }
     }
 

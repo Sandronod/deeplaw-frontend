@@ -142,7 +142,7 @@ export class ChatService {
     this.messages.update(msgs => [...msgs, assistantPlaceholder]);
 
     this.isSending.set(true);
-    this.streamPhase.set('searching');
+    this.streamPhase.set('preparing');
     this.startStreamTimer();
     this.error.set(null);
 
