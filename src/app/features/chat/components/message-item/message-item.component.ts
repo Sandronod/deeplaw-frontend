@@ -5,6 +5,7 @@ import { MarkdownService } from "../../../../core/services/markdown.service";
 import { CaseModalService } from "../../../../core/services/case-modal.service";
 import { CitationListComponent } from "../citation-list/citation-list.component";
 import { ConfidenceBadgeComponent } from "../confidence-badge/confidence-badge.component";
+import { HumanReviewPanelComponent } from "../human-review-panel/human-review-panel.component";
 import { MessageActionsComponent } from "../message-actions/message-actions.component";
 
 @Component({
@@ -14,6 +15,7 @@ import { MessageActionsComponent } from "../message-actions/message-actions.comp
         CommonModule,
         CitationListComponent,
         ConfidenceBadgeComponent,
+        HumanReviewPanelComponent,
         MessageActionsComponent,
     ],
     template: `
@@ -185,6 +187,8 @@ import { MessageActionsComponent } from "../message-actions/message-actions.comp
                                     (citationsToggle)="toggleCitations()"
                                 />
                             </div>
+
+                            <app-human-review-panel [message]="message" />
                         }
 
                         <!-- ── Citations ───────────────────────────────────────────────── -->

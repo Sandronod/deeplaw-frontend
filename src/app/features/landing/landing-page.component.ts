@@ -350,6 +350,7 @@ export class LandingPageComponent implements OnInit, OnDestroy {
   loading   = signal(false);
   formError = signal<string | null>(null);
   currentSlide = signal(0);
+  readonly publicRegistrationEnabled = false;
   year = new Date().getFullYear();
 
   private slideTimer: any;
@@ -417,6 +418,12 @@ export class LandingPageComponent implements OnInit, OnDestroy {
   }
 
   openModal(m: Modal): void {
+    if (m === 'register' && !this.publicRegistrationEnabled) {
+      this.modal.set('login');
+      this.formError.set('რეგისტრაცია დახურულია. მომხმარებელს ამატებს მთავარი ადმინი.');
+      return;
+    }
+
     this.modal.set(m);
     this.formError.set(null);
   }

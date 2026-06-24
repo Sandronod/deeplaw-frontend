@@ -142,6 +142,63 @@ export interface EvalResult {
   model:        string;
 }
 
+// Human legal review, stored in the application database.
+export type HumanReviewVerdict =
+  | 'correct'
+  | 'mostly_correct'
+  | 'partially_correct'
+  | 'incorrect'
+  | 'unsafe';
+
+export type HumanSourceCheckStatus =
+  | 'not_assessed'
+  | 'used_correctly'
+  | 'partially_correct'
+  | 'wrong_or_irrelevant'
+  | 'requested_but_missing'
+  | 'should_have_used'
+  | 'not_needed';
+
+export interface HumanSourceCheck {
+  requested: boolean;
+  used_count: number;
+  status: HumanSourceCheckStatus;
+}
+
+export interface HumanReviewPayload {
+  reviewer_name?: string | null;
+  overall_score: number;
+  legal_accuracy_score?: number | null;
+  norm_coverage_score?: number | null;
+  case_law_score?: number | null;
+  source_routing_score?: number | null;
+  clarity_score?: number | null;
+  verdict: HumanReviewVerdict;
+  correct_norms: string[];
+  incorrect_norms: string[];
+  missing_norms: string[];
+  correct_cases: string[];
+  irrelevant_cases: string[];
+  missing_cases: string[];
+  source_checks: Record<string, HumanSourceCheck>;
+  improvement_actions: string[];
+  notes?: string | null;
+}
+
+export interface HumanReview extends HumanReviewPayload {
+  id: number;
+  chat_id?: number;
+  chat_message_id?: number;
+  reviewer_id?: number;
+  reviewer_name?: string | null;
+  used_norms_snapshot?: unknown;
+  used_cases_snapshot?: unknown;
+  requested_sources_snapshot?: string[];
+  used_sources_snapshot?: Record<string, number>;
+  created_at?: string;
+  updated_at?: string;
+}
+
 // ── Meta ──────────────────────────────────────────────────────────────────────
 
 export interface MessageMeta {
@@ -162,6 +219,16 @@ export interface MessageMeta {
   used_case_count: number;
   used_chunk_count: number;
   law_citation_count?: number;
+  requested_sources?: string[];
+  sources_active?: string[];
+  source_status?: Record<string, {
+    requested?: boolean;
+    routed?: boolean;
+    attempted?: boolean;
+    count?: number;
+    status?: string;
+    error?: string;
+  }>;
 
   pipeline_ms?: number | null;
   answer_correction?: {
@@ -188,6 +255,7 @@ export interface ChatMessage {
   german_citations?: GermanCitation[];
   const_court_citations?: ConstCourtCitation[];
   eval?: EvalResult | null;
+  human_review?: HumanReview | null;
   meta?: MessageMeta;
   created_at: string;
   // UI-only fields — not persisted

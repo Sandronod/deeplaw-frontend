@@ -96,6 +96,25 @@ import { Chat } from '../../../../core/models/chat.model';
         }
       </nav>
 
+      @if (auth.isMainAdmin()) {
+        <div class="shrink-0 border-t border-sidebar-border px-3 py-2">
+          <button
+            (click)="openAdminUsers()"
+            class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium
+                   text-gray-400 transition-colors hover:bg-sidebar-hover hover:text-gray-100"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <line x1="19" y1="8" x2="19" y2="14"/>
+              <line x1="22" y1="11" x2="16" y2="11"/>
+            </svg>
+            შიდა იუზერები
+          </button>
+        </div>
+      }
+
       <!-- ── User & Logout ──────────────────────────────────────────────────── -->
       <div class="shrink-0 border-t border-sidebar-border px-3 py-2.5
                   flex items-center justify-between gap-2">
@@ -208,6 +227,11 @@ export class SidebarComponent {
 
   onNewChat(): void {
     this.chatService.newChat();
+    this.close.emit();
+  }
+
+  openAdminUsers(): void {
+    this.router.navigate(['/admin/users']);
     this.close.emit();
   }
 

@@ -14,6 +14,12 @@ export const routes: Routes = [
       import('./features/chat/chat.routes').then(m => m.CHAT_ROUTES),
   },
   {
+    path: 'admin/users',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/admin/admin-users-page.component').then(m => m.AdminUsersPageComponent),
+  },
+  {
     path: 'fullcase/:type/:caseId',
     canActivate: [authGuard],
     loadComponent: () =>

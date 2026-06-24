@@ -3,9 +3,28 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Chat } from '../models/chat.model';
-import { ChatMessage, SseEvent } from '../models/message.model';
+import { ChatMessage, HumanReview, HumanReviewPayload, SseEvent } from '../models/message.model';
 import { AuthService } from './auth.service';
 import { environment } from '../../../environments/environment';
+
+export interface AdminUser {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string | null;
+  is_main_admin: boolean;
+  created_at: string;
+}
+
+export interface CreateAdminUserPayload {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone?: string | null;
+  password: string;
+  password_confirmation: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -35,6 +54,18 @@ export class ApiService {
       .pipe(map(r => r.data));
   }
 
+  getAdminUsers(): Observable<AdminUser[]> {
+    return this.http
+      .get<{ data: AdminUser[] }>(`${this.base}/admin/users`)
+      .pipe(map(r => r.data));
+  }
+
+  createAdminUser(payload: CreateAdminUserPayload): Observable<AdminUser> {
+    return this.http
+      .post<{ data: AdminUser }>(`${this.base}/admin/users`, payload)
+      .pipe(map(r => r.data));
+  }
+
   // ── Messages ───────────────────────────────────────────────────────────────
 
   getMessages(chatId: number): Observable<ChatMessage[]> {
@@ -61,6 +92,12 @@ export class ApiService {
   sendMessage(chatId: number, message: string): Observable<ChatMessage> {
     return this.http
       .post<{ data: ChatMessage }>(`${this.base}/chats/${chatId}/messages`, { message })
+      .pipe(map(r => r.data));
+  }
+
+  reviewMessage(messageId: number, payload: HumanReviewPayload): Observable<HumanReview> {
+    return this.http
+      .post<{ data: HumanReview }>(`${this.base}/messages/${messageId}/review`, payload)
       .pipe(map(r => r.data));
   }
 

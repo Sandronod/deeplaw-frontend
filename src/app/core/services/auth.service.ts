@@ -11,6 +11,7 @@ export interface AuthUser {
   last_name: string;
   email: string;
   phone: string | null;
+  is_main_admin?: boolean;
 }
 
 const TOKEN_KEY = 'auth_token';
@@ -27,6 +28,10 @@ export class AuthService {
   readonly fullName        = computed(() => {
     const u = this.user();
     return u ? `${u.first_name} ${u.last_name}` : '';
+  });
+  readonly isMainAdmin     = computed(() => {
+    const u = this.user();
+    return u?.is_main_admin === true || u?.email?.toLowerCase() === 'nodarkarashvili@gmail.com';
   });
 
   constructor(private http: HttpClient, private router: Router) {}
