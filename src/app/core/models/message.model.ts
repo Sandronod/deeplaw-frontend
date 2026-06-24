@@ -231,6 +231,9 @@ export interface MessageMeta {
   }>;
 
   pipeline_ms?: number | null;
+  eval_enabled?: boolean;
+  eval_status?: 'pending' | 'completed' | 'disabled' | 'skipped' | 'not_requested' | string | null;
+  openai_usage?: OpenAIUsageSummary | null;
   answer_correction?: {
     enabled: boolean;
     attempted: boolean;
@@ -238,6 +241,46 @@ export interface MessageMeta {
     status: string;
     [key: string]: unknown;
   } | null;
+}
+
+export interface OpenAIUsageOperation {
+  operation: string;
+  endpoint: string;
+  model: string;
+  pricing_model?: string;
+  input_tokens: number;
+  cached_input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+  input_usd?: number;
+  cached_input_usd?: number;
+  output_usd?: number;
+  cost_usd: number;
+}
+
+export interface OpenAIUsageSummary {
+  enabled: boolean;
+  estimated?: boolean;
+  currency?: string;
+  calls: number;
+  input_tokens?: number;
+  cached_input_tokens?: number;
+  output_tokens?: number;
+  total_tokens?: number;
+  total_usd?: number;
+  total_cents?: number;
+  by_model?: Record<string, {
+    calls: number;
+    input_tokens: number;
+    cached_input_tokens: number;
+    output_tokens: number;
+    total_tokens: number;
+    cost_usd: number;
+    cost_cents?: number;
+  }>;
+  operations?: OpenAIUsageOperation[];
+  pricing_source?: string;
+  calculated_at?: string;
 }
 
 // ── Chat message ──────────────────────────────────────────────────────────────
@@ -270,6 +313,7 @@ export interface ChatMessage {
 export interface SseEvalData {
   message_id: number;
   eval: EvalResult;
+  meta?: Partial<MessageMeta>;
 }
 
 export interface SseEvent {

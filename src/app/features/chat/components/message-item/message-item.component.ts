@@ -178,6 +178,14 @@ import { MessageActionsComponent } from "../message-actions/message-actions.comp
                                             {{ responseTimeLabel }}
                                         </span>
                                     }
+                                    @if (costLabel) {
+                                        <span
+                                            class="text-[11px] tabular-nums text-gray-400 dark:text-gray-500"
+                                            [title]="costTooltip"
+                                        >
+                                            {{ costLabel }}
+                                        </span>
+                                    }
                                 </div>
 
                                 <app-message-actions
@@ -207,7 +215,7 @@ import { MessageActionsComponent } from "../message-actions/message-actions.comp
                         }
 
                         <!-- ── LLM-as-Judge evaluation ─────────────────────────────────── -->
-                        @if (isDone && !eval && message.isNew) {
+                        @if (isEvalPending) {
                             <div class="mt-2 flex items-center gap-1.5 text-[11px] text-gray-300 dark:text-gray-600 animate-pulse">
                                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
@@ -375,6 +383,99 @@ export class MessageItemComponent {
         return `დრო: ${this.formatDuration(ms)}`;
     }
 
+    get isEvalPending(): boolean {
+        const meta = this.message.meta;
+
+        return this.isDone
+            && !this.eval
+            && this.message.isNew === true
+            && meta?.eval_enabled === true
+            && ['pending', 'running'].includes(String(meta?.eval_status ?? ''));
+    }
+
+    get costLabel(): string | null {
+        const usage = this.message.meta?.openai_usage;
+        if (!usage?.enabled || !usage.calls || typeof usage.total_usd !== "number") {
+            return null;
+        }
+
+        const usdText = this.formatUsd(usage.total_usd);
+        const tokenText = typeof usage.total_tokens === "number" && usage.total_tokens > 0
+            ? ` · ${this.formatCompactNumber(usage.total_tokens)} tokens`
+            : "";
+        const modelText = this.costModelLabel;
+
+        return `სულ: ≈ ${usdText}${tokenText}${modelText ? ` · ${modelText}` : ""}`;
+    }
+
+    get costTooltip(): string {
+        const usage = this.message.meta?.openai_usage;
+        if (!usage?.enabled) {
+            return "OpenAI ხარჯის დათვლა გამორთულია";
+        }
+
+        const usd = typeof usage.total_usd === "number" ? `$${usage.total_usd.toFixed(6)}` : "N/A";
+        const input = usage.input_tokens ?? 0;
+        const output = usage.output_tokens ?? 0;
+        const modelBreakdown = this.costModelBreakdown;
+        const operationBreakdown = this.costOperationBreakdown;
+
+        return [
+            `საბოლოო ჯამური OpenAI API ხარჯი: ${usd}`,
+            `Input: ${input}, Output: ${output}`,
+            modelBreakdown ? `მოდელები: ${modelBreakdown}` : "",
+            operationBreakdown ? `ნაბიჯები: ${operationBreakdown}` : "",
+            "ტარიფი მოდის backend config/env-დან.",
+        ].filter(Boolean).join("\n");
+    }
+
+    get costModelLabel(): string | null {
+        const usage = this.message.meta?.openai_usage;
+        const operations = usage?.operations ?? [];
+        const answerOperation = operations.find((operation) =>
+            ['answer_stream', 'answer_generation'].includes(operation.operation)
+        );
+        const answerModel = answerOperation?.model ?? Object.keys(usage?.by_model ?? {})[0] ?? null;
+
+        if (!answerModel) {
+            return null;
+        }
+
+        const modelCount = Object.keys(usage?.by_model ?? {}).length;
+
+        return modelCount > 1
+            ? `პასუხი: ${answerModel} +${modelCount - 1}`
+            : `პასუხი: ${answerModel}`;
+    }
+
+    get costModelBreakdown(): string | null {
+        const byModel = this.message.meta?.openai_usage?.by_model;
+        if (!byModel || Object.keys(byModel).length === 0) {
+            return null;
+        }
+
+        return Object.entries(byModel)
+            .map(([model, item]) => {
+                const cost = typeof item.cost_usd === "number" ? this.formatUsd(item.cost_usd) : "N/A";
+                return `${model} (${item.calls} call, ${this.formatCompactNumber(item.total_tokens)} tokens, ${cost})`;
+            })
+            .join("; ");
+    }
+
+    get costOperationBreakdown(): string | null {
+        const operations = this.message.meta?.openai_usage?.operations ?? [];
+        if (operations.length === 0) {
+            return null;
+        }
+
+        return operations
+            .map((operation) => {
+                const cost = typeof operation.cost_usd === "number" ? this.formatUsd(operation.cost_usd) : "N/A";
+                return `${this.operationLabel(operation.operation)}: ${operation.model}, ${this.formatCompactNumber(operation.total_tokens)} tokens, ${cost}`;
+            })
+            .join("; ");
+    }
+
     get confidence() {
         return this.message.meta?.confidence ?? null;
     }
@@ -482,5 +583,57 @@ export class MessageItemComponent {
         const restSeconds = seconds % 60;
 
         return `${minutes} წთ ${restSeconds.toString().padStart(2, "0")} წმ`;
+    }
+
+    private operationLabel(operation: string): string {
+        switch (operation) {
+            case 'answer_stream':
+            case 'answer_generation':
+                return 'პასუხი';
+            case 'query_extraction':
+                return 'კითხვის დამუშავება';
+            case 'issue_spotting':
+                return 'საკითხების ამოღება';
+            case 'rule_extraction':
+                return 'ნორმების ამოღება';
+            case 'reranking':
+                return 'წყაროების გადალაგება';
+            case 'embedding':
+                return 'embedding';
+            case 'eval_judge':
+                return 'AI შეფასება';
+            case 'hyde_generation':
+                return 'HyDE ძებნა';
+            default:
+                return operation;
+        }
+    }
+
+    private formatUsd(value: number): string {
+        if (value > 0 && value < 0.0001) {
+            return "<$0.0001";
+        }
+
+        if (value < 0.01) {
+            return `$${value.toFixed(4)}`;
+        }
+
+        if (value < 1) {
+            return `$${value.toFixed(3)}`;
+        }
+
+        return `$${value.toFixed(2)}`;
+    }
+
+    private formatCompactNumber(value: number): string {
+        if (value >= 1_000_000) {
+            return `${(value / 1_000_000).toFixed(1)}M`;
+        }
+
+        if (value >= 1_000) {
+            return `${(value / 1_000).toFixed(1)}K`;
+        }
+
+        return `${value}`;
     }
 }

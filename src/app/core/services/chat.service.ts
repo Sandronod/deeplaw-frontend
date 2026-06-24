@@ -5,6 +5,7 @@ import { ApiService } from './api.service';
 import { Chat } from '../models/chat.model';
 import {
   ChatMessage,
+  MessageMeta,
   SseDoneData,
   SseEvalData,
   SseStatusData,
@@ -201,7 +202,11 @@ export class ChatService {
             const evalData = sseEvent.data as SseEvalData;
             this.messages.update(msgs => msgs.map(m =>
               m.id === evalData.message_id
-                ? { ...m, eval: evalData.eval }
+                ? {
+                  ...m,
+                  eval: evalData.eval,
+                  meta: evalData.meta ? { ...((m.meta ?? {}) as Partial<MessageMeta>), ...evalData.meta } as MessageMeta : m.meta,
+                }
                 : m
             ));
             break;
