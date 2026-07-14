@@ -36,6 +36,21 @@ import { Chat } from '../../../../core/models/chat.model';
           ახალი ჩატი
           <span class="ml-auto text-[10px] text-gray-600 font-normal">Ctrl+N</span>
         </button>
+
+        <button
+          (click)="openMatsneSearch()"
+          class="mt-2 flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-[13px] font-medium
+                 text-sidebar-text hover:bg-sidebar-hover active:bg-sidebar-active
+                 transition-colors duration-150 border border-sidebar-border"
+          [class.bg-sidebar-active]="isMatsneSearchActive()"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="11" cy="11" r="7"/>
+            <path d="m20 20-3.5-3.5"/>
+          </svg>
+          მაცნეს საძიებო
+        </button>
       </div>
 
       <!-- ── Conversation list ─────────────────────────────────────────────── -->
@@ -235,6 +250,11 @@ export class SidebarComponent {
     this.close.emit();
   }
 
+  openMatsneSearch(): void {
+    this.router.navigate(['/matsne-search']);
+    this.close.emit();
+  }
+
   select(chat: Chat): void {
     this.chatService.openChat(chat);
     this.router.navigate(['/chats', chat.id]);
@@ -248,5 +268,9 @@ export class SidebarComponent {
 
   isActive(chat: Chat): boolean {
     return this.chatService.activeChatId() === chat.id;
+  }
+
+  isMatsneSearchActive(): boolean {
+    return this.router.url.startsWith('/matsne-search');
   }
 }

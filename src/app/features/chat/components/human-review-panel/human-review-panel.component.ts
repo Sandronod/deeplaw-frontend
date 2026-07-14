@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, signal } from '@angular/core';
+import { Component, Input, OnInit, signal, type WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -16,10 +16,25 @@ interface SourceRow {
   key: SourceKey;
   label: string;
   requested: boolean;
+  recommended?: boolean;
   usedCount: number;
+  candidateCount?: number;
+  filteredCount?: number;
   routed: boolean;
   runStatus: string | null;
   error?: string | null;
+}
+
+interface ReviewTagOption {
+  key: string;
+  label: string;
+  description: string;
+}
+
+interface SummaryItem {
+  key: string;
+  label: string;
+  value: string;
 }
 
 @Component({
@@ -35,7 +50,12 @@ interface SourceRow {
                text-gray-500 hover:bg-gray-100 hover:text-gray-700
                dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
       >
-        <span>ადამიანური შეფასება</span>
+        <span>{{ reviewTitle }}</span>
+        @if (isRetrievalPreview) {
+          <span class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] text-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
+            retrieval
+          </span>
+        }
         @if (savedReview()) {
           <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
             შენახულია {{ savedReview()?.overall_score }}/10
@@ -88,8 +108,22 @@ interface SourceRow {
             </select>
           </label>
 
+          @if (diagnosticSummaryItems.length) {
+            <section class="space-y-2">
+              <h4 class="review-heading">{{ reviewSubtitle }}</h4>
+              <div class="flex flex-wrap gap-1.5">
+                @for (item of diagnosticSummaryItems; track item.key) {
+                  <span class="review-summary-pill">
+                    <span>{{ item.label }}</span>
+                    <strong>{{ item.value }}</strong>
+                  </span>
+                }
+              </div>
+            </section>
+          }
+
           <section class="space-y-2">
-            <h4 class="review-heading">AI-ის მიერ მოტანილი ნორმები</h4>
+            <h4 class="review-heading">{{ normsHeading }}</h4>
             @if (usedNormLabels.length) {
               <div class="flex flex-wrap gap-1">
                 @for (norm of usedNormLabels; track norm) {
@@ -117,7 +151,7 @@ interface SourceRow {
           </section>
 
           <section class="space-y-2">
-            <h4 class="review-heading">AI-ის მიერ მოტანილი გადაწყვეტილებები</h4>
+            <h4 class="review-heading">{{ casesHeading }}</h4>
             @if (usedCaseLabels.length) {
               <div class="flex flex-wrap gap-1">
                 @for (item of usedCaseLabels; track item) {
@@ -186,6 +220,30 @@ interface SourceRow {
                 </div>
               </div>
             }
+          </section>
+
+          <section class="space-y-2">
+            <h4 class="review-heading">სად გაჭირდა?</h4>
+            <div class="grid gap-2 sm:grid-cols-2">
+              @for (tag of failureTagOptions; track tag.key) {
+                <label class="review-check" [attr.title]="tag.description">
+                  <input type="checkbox" [checked]="selectedFailureTags().includes(tag.key)" (change)="toggleFailureTag(tag.key, $event)" />
+                  <span>{{ tag.label }}</span>
+                </label>
+              }
+            </div>
+          </section>
+
+          <section class="space-y-2">
+            <h4 class="review-heading">AI context-ის ხარისხი</h4>
+            <div class="grid gap-2 sm:grid-cols-2">
+              @for (tag of contextQualityOptions; track tag.key) {
+                <label class="review-check" [attr.title]="tag.description">
+                  <input type="checkbox" [checked]="selectedContextQualityTags().includes(tag.key)" (change)="toggleContextQualityTag(tag.key, $event)" />
+                  <span>{{ tag.label }}</span>
+                </label>
+              }
+            </div>
           </section>
 
           <section class="space-y-2">
@@ -282,6 +340,37 @@ interface SourceRow {
       font-size: 0.75rem;
       color: #9ca3af;
     }
+    .review-summary-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      background: #fff;
+      padding: 0.2rem 0.5rem;
+      font-size: 0.6875rem;
+      color: #6b7280;
+    }
+    .review-summary-pill strong {
+      color: #374151;
+      font-weight: 700;
+    }
+    .review-check {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      border-radius: 0.375rem;
+      background: #fff;
+      padding: 0.45rem 0.55rem;
+      font-size: 0.75rem;
+      color: #4b5563;
+    }
+    .review-check input {
+      width: 0.9rem;
+      height: 0.9rem;
+      accent-color: #2563eb;
+      flex: 0 0 auto;
+    }
     .action-help {
       position: relative;
       display: inline-flex;
@@ -328,6 +417,15 @@ interface SourceRow {
         background: rgba(79, 70, 229, 0.2);
         color: #c7d2fe;
       }
+      .review-summary-pill,
+      .review-check {
+        border-color: #374151;
+        background: #030712;
+        color: #d1d5db;
+      }
+      .review-summary-pill strong {
+        color: #f9fafb;
+      }
       .action-tooltip {
         background: #f9fafb;
         color: #111827;
@@ -344,6 +442,8 @@ export class HumanReviewPanelComponent implements OnInit {
   savedReview = signal<HumanReview | null>(null);
   missingSourceKeys = signal<SourceKey[]>([]);
   selectedActions = signal<string[]>([]);
+  selectedFailureTags = signal<string[]>([]);
+  selectedContextQualityTags = signal<string[]>([]);
 
   overallScore = 8;
   legalAccuracyScore: number | null = null;
@@ -369,6 +469,102 @@ export class HumanReviewPanelComponent implements OnInit {
     { key: 'eu', label: 'EU' },
     { key: 'german', label: 'გერმანული წყაროები' },
     { key: 'const_court', label: 'საკონსტიტუციო სასამართლო' },
+  ];
+
+  readonly failureTagOptions: ReviewTagOption[] = [
+    {
+      key: 'failure:query_normalization',
+      label: 'საძიებო ფრაზა აცდა',
+      description: 'მომხმარებლის კითხვა/კაზუსი არასწორ საძიებო ტერმინებად დაიშალა.',
+    },
+    {
+      key: 'failure:source_router',
+      label: 'წყარო არასწორად აირჩია',
+      description: 'საჭირო წყარო არ ჩაირთო ან ზედმეტი წყარო ჩაირთო.',
+    },
+    {
+      key: 'failure:matsne_missing_required_norm',
+      label: 'აუცილებელი ნორმა გამოტოვა',
+      description: 'კონკრეტული კანონი ან მუხლი უნდა ყოფილიყო context-ში, მაგრამ არ იყო.',
+    },
+    {
+      key: 'failure:matsne_noise',
+      label: 'Matsne ზედმეტად ფართოა',
+      description: 'მოიტანა ბევრი სუსტი ან სხვა დომენის ნორმა.',
+    },
+    {
+      key: 'failure:case_not_found',
+      label: 'საჭირო საქმე ვერ იპოვა',
+      description: 'არსებობს შესაფერისი გადაწყვეტილება, მაგრამ retrieval-ში არ მოხვდა.',
+    },
+    {
+      key: 'failure:case_irrelevant',
+      label: 'საქმეები თემას აცდა',
+      description: 'მოძიებული გადაწყვეტილებები ფაქტობრივად ან სამართლებრივად არ ერგება კითხვას.',
+    },
+    {
+      key: 'failure:case_context_weak',
+      label: 'საქმის ტექსტი სუსტია',
+      description: 'საქმე სწორია ან ახლოა, მაგრამ excerpt/context არ ხსნის reasoning-ს ან holding-ს.',
+    },
+    {
+      key: 'failure:case_number_parse',
+      label: 'საქმის ნომერი ვერ დაიჭირა',
+      description: 'კითხვაში მოცემული ნომერი/ფორმატი ძებნამ სრულად ვერ ამოიცნო.',
+    },
+    {
+      key: 'failure:prompt_ignored_sources',
+      label: 'პასუხმა წყაროები ვერ გამოიყენა',
+      description: 'context კარგი იყო, მაგრამ საბოლოო პასუხმა წყაროები არასწორად გამოიყენა.',
+    },
+    {
+      key: 'failure:data_gap',
+      label: 'მონაცემი გვაკლია',
+      description: 'ბაზაში შესაბამისი ნორმა, საქმე ან სრული ტექსტი არ გვაქვს.',
+    },
+    {
+      key: 'failure:slow_search',
+      label: 'ძებნა ნელია',
+      description: 'retrieval ან context build პრაქტიკული ტესტირებისთვის ზედმეტად დიდხანს გაგრძელდა.',
+    },
+  ];
+
+  readonly contextQualityOptions: ReviewTagOption[] = [
+    {
+      key: 'context:enough_to_answer',
+      label: 'საკმარისია პასუხისთვის',
+      description: 'AI-სთან გასაგზავნი კონტექსტი საკმარისად ზუსტი და გასაგებია.',
+    },
+    {
+      key: 'context:no_sources',
+      label: 'წყაროები 0',
+      description: 'context-ში რეალური ნორმა ან გადაწყვეტილება არ შევიდა.',
+    },
+    {
+      key: 'context:too_broad',
+      label: 'ზედმეტად ბევრია',
+      description: 'context-ში ბევრი ზედმეტი წყაროა და პასუხს აბნევს.',
+    },
+    {
+      key: 'context:wrong_domain',
+      label: 'დომენი აცდა',
+      description: 'წყაროები სხვა სამართლებრივ დომენზე ან სხვა დავის ტიპზეა.',
+    },
+    {
+      key: 'context:missing_norm_text',
+      label: 'ნორმის ტექსტი სუსტია',
+      description: 'ნორმა ჩანს, მაგრამ AI-სთვის გაგზავნილი ტექსტი არ არის საკმარისი.',
+    },
+    {
+      key: 'context:missing_case_reasoning',
+      label: 'საქმის reasoning აკლია',
+      description: 'გადაწყვეტილების excerpt/full-text preview არ აჩვენებს არსებით სამართლებრივ მსჯელობას.',
+    },
+    {
+      key: 'context:needs_full_decision',
+      label: 'სრული გადაწყვეტილება სჭირდება',
+      description: 'მხოლოდ chunk/excerpt არ კმარა და საბოლოო პასუხისთვის მეტი ტექსტი უნდა წავიდეს.',
+    },
   ];
 
   readonly actionOptions = [
@@ -425,7 +621,7 @@ export class HumanReviewPanelComponent implements OnInit {
       this.irrelevantCasesText = this.lines(review.irrelevant_cases);
       this.missingCasesText = this.lines(review.missing_cases);
       this.notes = review.notes ?? '';
-      this.selectedActions.set(review.improvement_actions ?? []);
+      this.hydrateDiagnosticSelections(review);
 
       for (const [key, value] of Object.entries(review.source_checks ?? {})) {
         this.sourceStatuses[key] = value.status;
@@ -460,7 +656,7 @@ export class HumanReviewPanelComponent implements OnInit {
       irrelevant_cases: this.parseLines(this.irrelevantCasesText),
       missing_cases: this.parseLines(this.missingCasesText),
       source_checks: this.buildSourceChecks(),
-      improvement_actions: this.selectedActions(),
+      improvement_actions: this.buildImprovementActions(),
       notes: this.notes.trim() || null,
     };
 
@@ -477,6 +673,57 @@ export class HumanReviewPanelComponent implements OnInit {
     });
   }
 
+  get isRetrievalPreview(): boolean {
+    return this.message.meta?.retrieval_preview === true;
+  }
+
+  get reviewTitle(): string {
+    return this.isRetrievalPreview ? 'ძიების ადამიანური შეფასება' : 'ადამიანური შეფასება';
+  }
+
+  get reviewSubtitle(): string {
+    return this.isRetrievalPreview ? 'ძიების მოკლე სურათი' : 'პასუხის მოკლე სურათი';
+  }
+
+  get normsHeading(): string {
+    return this.isRetrievalPreview ? 'AI context-ში შესული ნორმები' : 'AI-ის მიერ მოტანილი ნორმები';
+  }
+
+  get casesHeading(): string {
+    return this.isRetrievalPreview ? 'AI context-ში შესული გადაწყვეტილებები' : 'AI-ის მიერ მოტანილი გადაწყვეტილებები';
+  }
+
+  get diagnosticSummaryItems(): SummaryItem[] {
+    const counts = (this.message.meta?.retrieval_debug?.summary?.['counts'] ?? {}) as Record<string, unknown>;
+    const sourceCounts = this.usedSourceCounts();
+    const items: SummaryItem[] = [];
+
+    const matsne = this.numberFrom(counts['matsne_docs'], sourceCounts.matsne);
+    const cases = this.numberFrom(counts['domestic_cases'], sourceCounts.court);
+    const candidates = this.numberFrom(counts['candidate_domestic_cases'], null);
+    const filtered = this.numberFrom(counts['filtered_domestic_cases'], null);
+    const chunks = this.numberFrom(counts['used_chunks'], this.message.meta?.used_chunk_count ?? null);
+    const pipelineMs = this.message.meta?.pipeline_ms;
+
+    items.push({ key: 'norms', label: 'ნორმები', value: String(matsne) });
+    items.push({ key: 'cases', label: 'საქმეები', value: String(cases) });
+
+    if (candidates !== null) {
+      items.push({ key: 'candidate_cases', label: 'კანდიდატი საქმეები', value: String(candidates) });
+    }
+    if (filtered !== null && filtered > 0) {
+      items.push({ key: 'filtered_cases', label: 'გაფილტრული', value: String(filtered) });
+    }
+    if (chunks !== null && chunks > 0) {
+      items.push({ key: 'chunks', label: 'chunk', value: String(chunks) });
+    }
+    if (typeof pipelineMs === 'number' && pipelineMs >= 0) {
+      items.push({ key: 'time', label: 'დრო', value: this.formatDuration(pipelineMs) });
+    }
+
+    return items;
+  }
+
   get assessableSources(): SourceRow[] {
     const requested = this.requestedSourceKeys();
     const used = this.usedSourceCounts();
@@ -486,6 +733,9 @@ export class HumanReviewPanelComponent implements OnInit {
     for (const [key, count] of Object.entries(used) as [SourceKey, number][]) {
       if (count > 0) keys.add(key);
     }
+    for (const [key, sourceStatus] of Object.entries(status) as [SourceKey, { recommended?: boolean }][]) {
+      if (sourceStatus.recommended === true) keys.add(key);
+    }
 
     return this.sourceOrder
       .filter(source => keys.has(source.key))
@@ -494,7 +744,10 @@ export class HumanReviewPanelComponent implements OnInit {
         return {
           ...source,
           requested: requested.includes(source.key) || sourceStatus.requested === true,
+          recommended: sourceStatus.recommended === true,
           usedCount: used[source.key] ?? 0,
+          candidateCount: sourceStatus.candidate_count,
+          filteredCount: sourceStatus.filtered_count,
           routed: sourceStatus.routed === true,
           runStatus: sourceStatus.status ?? null,
           error: sourceStatus.error ?? null,
@@ -543,6 +796,14 @@ export class HumanReviewPanelComponent implements OnInit {
     );
   }
 
+  toggleFailureTag(key: string, event: Event): void {
+    this.toggleSignalKey(this.selectedFailureTags, key, event);
+  }
+
+  toggleContextQualityTag(key: string, event: Event): void {
+    this.toggleSignalKey(this.selectedContextQualityTags, key, event);
+  }
+
   sourceRunLabel(row: SourceRow): string {
     const prefix = row.requested
       ? 'მონიშნული იყო'
@@ -553,6 +814,8 @@ export class HumanReviewPanelComponent implements OnInit {
     switch (row.runStatus) {
       case 'found':
         return `${prefix} · მოძებნა ${row.usedCount} წყარო`;
+      case 'filtered':
+        return `${prefix} · კანდიდატები მოიძებნა (${row.filteredCount ?? row.candidateCount ?? 0}), AI context-ში არ გაიგზავნა`;
       case 'not_found':
         return `${prefix} · ძებნა შესრულდა, შედეგი 0`;
       case 'not_attempted':
@@ -561,6 +824,8 @@ export class HumanReviewPanelComponent implements OnInit {
         return `${prefix} · ძებნის შეცდომა`;
       case 'not_routed':
         return `${prefix} · ძებნა არ ჩაირთო`;
+      case 'not_requested':
+        return `საჭირო ჩანდა · წყარო მონიშნული არ იყო`;
       default:
         return `${prefix} · ${row.usedCount} წყარო`;
     }
@@ -574,6 +839,11 @@ export class HumanReviewPanelComponent implements OnInit {
         requested: row.requested,
         used_count: row.usedCount,
         status: this.sourceStatuses[row.key] ?? 'not_assessed',
+        recommended: row.recommended === true,
+        routed: row.routed,
+        candidate_count: row.candidateCount ?? null,
+        filtered_count: row.filteredCount ?? null,
+        run_status: row.runStatus,
       };
     }
 
@@ -582,10 +852,55 @@ export class HumanReviewPanelComponent implements OnInit {
         requested: false,
         used_count: this.usedSourceCounts()[key] ?? 0,
         status: 'should_have_used',
+        run_status: 'reviewer_expected_source',
       };
     }
 
+    checks['_diagnostics'] = {
+      requested: false,
+      used_count: this.totalUsedSourceCount(),
+      status: 'not_assessed',
+      review_mode: this.isRetrievalPreview ? 'retrieval_preview' : 'answer',
+      failure_tags: this.selectedFailureTags(),
+      context_quality: this.selectedContextQualityTags(),
+      candidate_count: this.totalCandidateCount(),
+      filtered_count: this.totalFilteredCount(),
+      run_status: this.diagnosticRunStatus(),
+    };
+
     return checks;
+  }
+
+  private buildImprovementActions(): string[] {
+    return Array.from(new Set([
+      ...this.selectedActions(),
+      ...this.selectedFailureTags(),
+      ...this.selectedContextQualityTags(),
+    ]));
+  }
+
+  private hydrateDiagnosticSelections(review: HumanReview): void {
+    const savedActions = review.improvement_actions ?? [];
+    const diagnostics = review.source_checks?.['_diagnostics'];
+    const diagnosticsFailureTags = Array.isArray(diagnostics?.failure_tags) ? diagnostics.failure_tags : [];
+    const diagnosticsContextQuality = Array.isArray(diagnostics?.context_quality) ? diagnostics.context_quality : [];
+
+    this.selectedActions.set(savedActions.filter(action =>
+      !this.isFailureTag(action) && !this.isContextQualityTag(action)
+    ));
+    this.selectedFailureTags.set(this.unique([
+      ...savedActions.filter(action => this.isFailureTag(action)),
+      ...diagnosticsFailureTags,
+    ]));
+    this.selectedContextQualityTags.set(this.unique([
+      ...savedActions.filter(action => this.isContextQualityTag(action)),
+      ...diagnosticsContextQuality,
+    ]));
+
+    const missingSources = Object.entries(review.source_checks ?? {})
+      .filter(([key, value]) => this.isSourceKey(key) && value.status === 'should_have_used')
+      .map(([key]) => key as SourceKey);
+    this.missingSourceKeys.set(this.unique(missingSources));
   }
 
   private requestedSourceKeys(): SourceKey[] {
@@ -617,6 +932,76 @@ export class HumanReviewPanelComponent implements OnInit {
       german: Math.max(this.message.german_citations?.length ?? 0, status['german']?.count ?? 0),
       const_court: Math.max(this.message.const_court_citations?.length ?? 0, status['const_court']?.count ?? 0),
     };
+  }
+
+  private totalUsedSourceCount(): number {
+    return Object.values(this.usedSourceCounts()).reduce((sum, count) => sum + count, 0);
+  }
+
+  private totalCandidateCount(): number | null {
+    const total = this.assessableSources.reduce((sum, row) => sum + (row.candidateCount ?? 0), 0);
+    return total > 0 ? total : null;
+  }
+
+  private totalFilteredCount(): number | null {
+    const total = this.assessableSources.reduce((sum, row) => sum + (row.filteredCount ?? 0), 0);
+    return total > 0 ? total : null;
+  }
+
+  private diagnosticRunStatus(): string {
+    if (this.isRetrievalPreview) {
+      return 'retrieval_preview_reviewed';
+    }
+
+    return 'answer_reviewed';
+  }
+
+  private numberFrom(value: unknown, fallback: number | null): number | null {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+
+    return fallback;
+  }
+
+  private formatDuration(ms: number): string {
+    if (ms < 1000) {
+      return `${Math.round(ms)}ms`;
+    }
+
+    const seconds = Math.round(ms / 100) / 10;
+    if (seconds < 60) {
+      return `${seconds}s`;
+    }
+
+    const minutes = Math.floor(seconds / 60);
+    const rest = Math.round(seconds % 60);
+    return `${minutes}m ${rest}s`;
+  }
+
+  private toggleSignalKey(target: WritableSignal<string[]>, key: string, event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
+    target.update(keys => checked
+      ? this.unique([...keys, key])
+      : keys.filter(item => item !== key)
+    );
+  }
+
+  private unique<T>(values: T[]): T[] {
+    return Array.from(new Set(values));
+  }
+
+  private isSourceKey(value: string): value is SourceKey {
+    return this.sourceOrder.some(source => source.key === value);
+  }
+
+  private isFailureTag(value: string): boolean {
+    return value.startsWith('failure:');
+  }
+
+  private isContextQualityTag(value: string): boolean {
+    return value.startsWith('context:');
   }
 
   private parseLines(value: string): string[] {

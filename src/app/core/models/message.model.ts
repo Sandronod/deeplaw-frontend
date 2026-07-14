@@ -159,10 +159,21 @@ export type HumanSourceCheckStatus =
   | 'should_have_used'
   | 'not_needed';
 
+export type HumanReviewMode = 'answer' | 'retrieval_preview';
+
 export interface HumanSourceCheck {
   requested: boolean;
   used_count: number;
   status: HumanSourceCheckStatus;
+  recommended?: boolean;
+  routed?: boolean;
+  candidate_count?: number | null;
+  filtered_count?: number | null;
+  run_status?: string | null;
+  failure_tags?: string[];
+  context_quality?: string[];
+  review_mode?: HumanReviewMode;
+  reviewer_note?: string | null;
 }
 
 export interface HumanReviewPayload {
@@ -223,9 +234,12 @@ export interface MessageMeta {
   sources_active?: string[];
   source_status?: Record<string, {
     requested?: boolean;
+    recommended?: boolean;
     routed?: boolean;
     attempted?: boolean;
     count?: number;
+    candidate_count?: number;
+    filtered_count?: number;
     status?: string;
     error?: string;
   }>;
@@ -241,6 +255,8 @@ export interface MessageMeta {
     status: string;
     [key: string]: unknown;
   } | null;
+  retrieval_preview?: boolean;
+  retrieval_debug?: RetrievalDebug | null;
 }
 
 export interface OpenAIUsageOperation {
@@ -281,6 +297,106 @@ export interface OpenAIUsageSummary {
   operations?: OpenAIUsageOperation[];
   pricing_source?: string;
   calculated_at?: string;
+}
+
+export interface RetrievalDebugSource {
+  rank?: number;
+  id?: string | number | null;
+  title?: string | null;
+  case_num?: string | null;
+  date?: string | null;
+  type?: string | null;
+  court?: string | null;
+  similarity?: number | null;
+  url?: string | null;
+  excerpt?: string | null;
+  [key: string]: unknown;
+}
+
+export interface RetrievalDebugNorm {
+  rank?: number;
+  matsne_id?: number | string | null;
+  title?: string | null;
+  article_num?: number | string | null;
+  unit_path?: string | null;
+  norm_unit_id?: number | string | null;
+  retrieval?: string | null;
+  source?: string | null;
+  rank_score?: number | null;
+  similarity?: number | null;
+  lexical_score?: number | null;
+  is_active?: boolean | null;
+  effective_from_year?: number | null;
+  effective_to_year?: number | null;
+  url?: string | null;
+  excerpt?: string | null;
+  [key: string]: unknown;
+}
+
+export interface RetrievalDebugDecision {
+  rank?: number;
+  case_id?: number | string | null;
+  case_num?: string | null;
+  case_date?: string | null;
+  court?: string | null;
+  chamber?: string | null;
+  category?: string | null;
+  dispute_subject?: string | null;
+  result?: string | null;
+  answer_role?: string | null;
+  filtered_reason?: string | null;
+  filtered_rank?: number | null;
+  relevance_score?: number | null;
+  semantic_relevance_score?: number | null;
+  ranking_explanation?: string | null;
+  match_sources?: string[] | string | null;
+  quality_flags?: string[] | string | null;
+  case_card_legal_issue?: string | null;
+  case_card_holding?: string | null;
+  excerpt?: string | null;
+  full_text_chars?: number | null;
+  [key: string]: unknown;
+}
+
+export interface RetrievalDebugPromptMessage {
+  index?: number;
+  role?: string;
+  content?: string;
+  original_chars?: number;
+}
+
+export interface RetrievalDebugPrompt {
+  provider?: string | null;
+  model?: string | null;
+  stats?: Record<string, unknown>;
+  system_prompt?: string;
+  rules_block?: string;
+  remedy_block?: string;
+  retrieval_block?: string;
+  context_block?: string;
+  messages?: RetrievalDebugPromptMessage[];
+  error?: string;
+}
+
+export interface RetrievalDebug {
+  summary?: Record<string, unknown>;
+  triage?: Record<string, unknown>;
+  parsed_query?: Record<string, unknown> | null;
+  source_status?: MessageMeta['source_status'];
+  source_plan?: string[];
+  debug_flags?: Record<string, unknown>;
+  timings_ms?: Record<string, unknown>;
+  case_ranking?: unknown[];
+  norms?: RetrievalDebugNorm[];
+  decisions?: RetrievalDebugDecision[];
+  candidate_decisions?: RetrievalDebugDecision[];
+  filtered_decisions?: RetrievalDebugDecision[];
+  echr?: RetrievalDebugSource[];
+  eu?: RetrievalDebugSource[];
+  german?: RetrievalDebugSource[];
+  const_court?: RetrievalDebugSource[];
+  prompt?: RetrievalDebugPrompt | null;
+  [key: string]: unknown;
 }
 
 // ── Chat message ──────────────────────────────────────────────────────────────

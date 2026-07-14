@@ -46,6 +46,38 @@ import { ChatService } from '../../../../core/services/chat.service';
               [class.font-semibold]="isSelected(opt.value)"
             >{{ opt.label }}</button>
           }
+
+          <label
+            class="ml-0 sm:ml-auto inline-flex items-center gap-2 px-2.5 py-1 rounded-full border text-[11px]
+                   cursor-pointer select-none transition-all duration-150"
+            [class.border-accent]="chatService.retrievalPreview()"
+            [class.bg-accent-50]="chatService.retrievalPreview()"
+            [class.text-accent]="chatService.retrievalPreview()"
+            [class.border-gray-200]="!chatService.retrievalPreview()"
+            [class.dark:border-gray-700]="!chatService.retrievalPreview()"
+            [class.text-gray-500]="!chatService.retrievalPreview()"
+            [class.dark:text-gray-400]="!chatService.retrievalPreview()"
+          >
+            <input
+              type="checkbox"
+              class="sr-only"
+              [checked]="chatService.retrievalPreview()"
+              (change)="toggleRetrievalPreview()"
+            />
+            <span
+              class="relative inline-flex h-3.5 w-6 shrink-0 rounded-full transition-colors"
+              [class.bg-accent]="chatService.retrievalPreview()"
+              [class.bg-gray-300]="!chatService.retrievalPreview()"
+              [class.dark:bg-gray-700]="!chatService.retrievalPreview()"
+            >
+              <span
+                class="absolute top-0.5 h-2.5 w-2.5 rounded-full bg-white shadow-sm transition-transform"
+                [class.translate-x-3]="chatService.retrievalPreview()"
+                [class.translate-x-0.5]="!chatService.retrievalPreview()"
+              ></span>
+            </span>
+            <span class="font-medium">ძიების ტესტი</span>
+          </label>
         </div>
 
         <!-- Input box -->
@@ -166,6 +198,10 @@ export class ChatInputComponent {
     } else {
       this.chatService.sources.set([...this.allSources]);
     }
+  }
+
+  toggleRetrievalPreview(): void {
+    this.chatService.retrievalPreview.update(v => !v);
   }
 
   send(): void {

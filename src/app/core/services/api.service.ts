@@ -89,9 +89,13 @@ export class ApiService {
   }
 
   /** Non-streaming fallback — returns full assistant message at once. */
-  sendMessage(chatId: number, message: string): Observable<ChatMessage> {
+  sendMessage(chatId: number, message: string, sources: string[] = ['court', 'matsne'], retrievalPreview = false): Observable<ChatMessage> {
     return this.http
-      .post<{ data: ChatMessage }>(`${this.base}/chats/${chatId}/messages`, { message })
+      .post<{ data: ChatMessage }>(`${this.base}/chats/${chatId}/messages`, {
+        message,
+        sources,
+        retrieval_preview: retrievalPreview,
+      })
       .pipe(map(r => r.data));
   }
 
@@ -106,7 +110,7 @@ export class ApiService {
    * Emits SseEvent objects: status → token* → done | error.
    * The Observable completes after 'done' or 'error'.
    */
-  streamMessage(chatId: number, message: string, sources: string[] = ['court', 'matsne']): Observable<SseEvent> {
+  streamMessage(chatId: number, message: string, sources: string[] = ['court', 'matsne'], retrievalPreview = false): Observable<SseEvent> {
     return new Observable<SseEvent>(observer => {
       const controller = new AbortController();
 
@@ -118,7 +122,7 @@ export class ApiService {
           'Accept':        'text/event-stream',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
-        body:   JSON.stringify({ message, sources }),
+        body:   JSON.stringify({ message, sources, retrieval_preview: retrievalPreview }),
         signal: controller.signal,
       })
         .then(response => {

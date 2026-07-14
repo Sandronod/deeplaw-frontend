@@ -27,6 +27,7 @@ export class ChatService {
   /** Increments on every token — lets chat-thread re-evaluate scroll position. */
   readonly streamTick   = signal(0);
   readonly sources      = signal<string[]>(['court', 'matsne']);
+  readonly retrievalPreview = signal(false);
 
   readonly chatsLoading = signal(false);
   readonly hasChats     = computed(() => this.chats().length > 0);
@@ -148,7 +149,7 @@ export class ChatService {
     this.error.set(null);
 
     // 3. Subscribe to SSE stream
-    this.api.streamMessage(chat.id, text.trim(), this.sources()).subscribe({
+    this.api.streamMessage(chat.id, text.trim(), this.sources(), this.retrievalPreview()).subscribe({
       next: sseEvent => {
         switch (sseEvent.event) {
 

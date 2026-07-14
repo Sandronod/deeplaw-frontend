@@ -20,6 +20,11 @@ export const routes: Routes = [
       import('./features/admin/admin-users-page.component').then(m => m.AdminUsersPageComponent),
   },
   {
+    path: 'matsne-search',
+    loadComponent: () =>
+      import('./features/matsne-search/matsne-search-page.component').then(m => m.MatsneSearchPageComponent),
+  },
+  {
     path: 'fullcase/:type/:caseId',
     canActivate: [authGuard],
     loadComponent: () =>

@@ -28,6 +28,12 @@ type Modal = 'none' | 'login' | 'register';
         </span>
       </div>
       <div class="flex items-center gap-2">
+        <button (click)="openMatsneSearch()"
+          class="hidden rounded-lg px-4 py-1.5 text-sm font-medium text-gray-600
+                 transition-colors hover:bg-gray-100 hover:text-gray-900
+                 dark:text-gray-300 dark:hover:bg-gray-900 dark:hover:text-white sm:inline-flex">
+          მაცნეს საძიებო
+        </button>
         <button (click)="openModal('login')"
           class="px-4 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300
                  hover:text-gray-900 dark:hover:text-white transition-colors">
@@ -81,6 +87,12 @@ type Modal = 'none' | 'login' | 'register';
 
         <!-- CTA buttons -->
         <div class="flex flex-col sm:flex-row items-center gap-3 mt-2">
+          <button (click)="openMatsneSearch()"
+            class="px-8 py-3.5 rounded-xl bg-white text-gray-950 font-semibold
+                   hover:bg-gray-100 transition-all duration-200
+                   shadow-lg shadow-black/20 active:scale-95">
+            მაცნეს საძიებო
+          </button>
           <button (click)="openModal('register')"
             class="px-8 py-3.5 rounded-xl bg-accent text-white font-semibold
                    hover:bg-accent-hover transition-all duration-200
@@ -415,6 +427,10 @@ export class LandingPageComponent implements OnInit, OnDestroy {
     this.slideTimer = setInterval(() => {
       this.currentSlide.update(s => (s + 1) % this.slides.length);
     }, 4000);
+  }
+
+  openMatsneSearch(): void {
+    this.router.navigate(['/matsne-search']);
   }
 
   openModal(m: Modal): void {
